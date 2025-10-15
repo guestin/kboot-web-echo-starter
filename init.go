@@ -2,7 +2,7 @@ package web
 
 import (
 	"github.com/guestin/kboot"
-	"github.com/guestin/kboot/web/internal"
+	"github.com/guestin/kboot-web-echo-starter/internal"
 )
 
 func init() {
@@ -12,7 +12,12 @@ func init() {
 func _init(unit kboot.Unit) (kboot.ExecFunc, error) {
 	internal.Log = kboot.GetTaggedLogger(ModuleName)
 	internal.ZapLog = kboot.GetTaggedZapLogger(ModuleName)
-	cfg := new(Config)
+	cfg := &Config{
+		ListenAddress: DefaultListenAddress,
+		Debug:         false,
+		Auth:          nil,
+		Cors:          nil,
+	}
 	err := kboot.UnmarshalSubConfig(ModuleName, cfg,
 		kboot.MustBindEnv(CfgKeyListen),
 		kboot.MustBindEnv(CfgKeyDebug),

@@ -1,7 +1,7 @@
 package web
 
 import (
-	"github.com/guestin/kboot/web/mid"
+	"github.com/guestin/kboot-web-echo-starter/mid"
 )
 
 const (
@@ -10,7 +10,7 @@ const (
 	CfgKeyListen = "listen"
 	CfgKeyDebug  = "debug"
 
-	DefaultListenAddress = ":8080"
+	DefaultListenAddress = ":20808"
 )
 
 type (

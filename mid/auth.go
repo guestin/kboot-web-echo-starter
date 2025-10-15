@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guestin/kboot/web/kerrors"
+	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/guestin/mob"
 	"github.com/labstack/echo/v4"
 )

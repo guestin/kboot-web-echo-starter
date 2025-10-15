@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/guestin/kboot/web/internal"
-	"github.com/guestin/kboot/web/kerrors"
+	"github.com/guestin/kboot-web-echo-starter/internal"
+	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/guestin/mob/merrors"
 	"github.com/labstack/echo/v4"
 	"github.com/ooopSnake/assert.go"

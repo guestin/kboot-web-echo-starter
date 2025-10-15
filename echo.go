@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/guestin/kboot"
-	"github.com/guestin/kboot/web/internal"
-	"github.com/guestin/kboot/web/kerrors"
-	"github.com/guestin/kboot/web/mid"
+	"github.com/guestin/kboot-web-echo-starter/internal"
+	"github.com/guestin/kboot-web-echo-starter/kerrors"
+	"github.com/guestin/kboot-web-echo-starter/mid"
 	"github.com/guestin/mob/merrors"
 	"github.com/guestin/mob/mvalidate"
 	"github.com/labstack/echo/v4"
