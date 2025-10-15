@@ -13,8 +13,8 @@ debug = true
 package apis
 
 import (
-	"github.com/guestin/kboot/web"
-	"github.com/guestin/kboot/web/mid"
+	"github.com/guestin/kboot-web-echo-starter"
+	"github.com/guestin/kboot-web-echo-starter/mid"
 )
 
 func init() {
