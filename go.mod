@@ -1,4 +1,4 @@
-module github.com/guestin/kboot/web
+module github.com/guestin/kboot-web-echo-starter
 
 go 1.25
 
