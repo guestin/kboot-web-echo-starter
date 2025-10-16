@@ -1,15 +1,17 @@
 package mid
 
 import (
-	"bytes"
 	"fmt"
 	"io"
+	"runtime/debug"
 
+	"github.com/guestin/kboot"
 	"github.com/guestin/kboot-web-echo-starter/internal"
 	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/guestin/mob/merrors"
 	"github.com/labstack/echo/v4"
 	"github.com/ooopSnake/assert.go"
+	"go.uber.org/zap"
 
 	"net/http"
 	"reflect"
@@ -75,7 +77,10 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 		defer func() {
 			err := recover()
 			if err != nil {
-				internal.Log.Errorf("panic recover : %s\n%s\n", err, panicTrace(panicTraceSizeKb))
+				kboot.GetTaggedZapLogger("mid").Error("panic recover",
+					zap.Any("error", err),
+					zap.Any("stack", string(debug.Stack())),
+				)
 				ctx.Set(CtxStatusKey, http.StatusInternalServerError)
 				ctx.Set(CtxErrorKey, kerrors.InternalErr("Server is busy"))
 			}
@@ -278,28 +283,4 @@ flush:
 		_ = ctx.JSON(statusCode, resp)
 		//_ = ctx.JSONPretty(statusCode, resp,jsonIndent)
 	}
-}
-
-const panicTraceSizeKb = 2
-
-func panicTrace(kb int) []byte {
-	s := []byte("/src/runtime/panic.go")
-	e := []byte("\ngoroutine ")
-	line := []byte("\n")
-	stack := make([]byte, kb<<10) //4KB
-	length := runtime.Stack(stack, true)
-	start := bytes.Index(stack, s)
-	stack = stack[start:length]
-	start = bytes.Index(stack, line) + 1
-	stack = stack[start:]
-	end := bytes.LastIndex(stack, line)
-	if end != -1 {
-		stack = stack[:end]
-	}
-	end = bytes.Index(stack, e)
-	if end != -1 {
-		stack = stack[:end]
-	}
-	stack = bytes.TrimRight(stack, "\n")
-	return stack
 }

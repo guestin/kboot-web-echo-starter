@@ -2,31 +2,37 @@ package web
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 )
 
-var _options = make([]Option, 0)
-
 type Option interface {
-	apply(e *echo.Echo) error
+	apply(e *web) error
 }
 
-type optionFunc func(e *echo.Echo) error
+type optionFunc func(w *web) error
 
-func (f optionFunc) apply(e *echo.Echo) error {
-	return f(e)
+func (f optionFunc) apply(w *web) error {
+	return f(w)
 }
-
-type RouteBuilder func(eCtx *echo.Echo) error
 
 func Use(m ...echo.MiddlewareFunc) {
-	_options = append(_options, optionFunc(func(e *echo.Echo) error {
-		e.Use(m...)
+	_gWeb.options = append(_gWeb.options, optionFunc(func(w *web) error {
+		w.echoCtx.Use(m...)
 		return nil
 	}))
 }
 
-func Router(fn RouteBuilder) {
-	_options = append(_options, optionFunc(func(e *echo.Echo) error {
-		return fn(e)
+type RouteBuilder func(eCtx *echo.Echo)
+
+func WithRouter(fn RouteBuilder) {
+	_gWeb.options = append(_gWeb.options, optionFunc(func(w *web) (err error) {
+		defer func() {
+			pe := recover()
+			if pe != nil {
+				err = errors.Errorf("panic while register router :%v", pe)
+			}
+		}()
+		fn(w.echoCtx)
+		return nil
 	}))
 }

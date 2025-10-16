@@ -1,14 +1,15 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/guestin/kboot"
-	"github.com/guestin/kboot-web-echo-starter/internal"
 	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/guestin/kboot-web-echo-starter/mid"
+	"github.com/guestin/log"
 	"github.com/guestin/mob/merrors"
 	"github.com/guestin/mob/mvalidate"
 	"github.com/labstack/echo/v4"
@@ -16,15 +17,26 @@ import (
 	"go.uber.org/zap"
 )
 
-func _initEcho(unit kboot.Unit, cfg *Config) (kboot.ExecFunc, error) {
-	ctx := unit.GetContext()
-	eCtx := echo.New()
+var _gWeb *web
+
+type web struct {
+	ctx     context.Context
+	echoCtx *echo.Echo
+	cfg     *Config
+	unit    kboot.Unit
+	logger  log.ZapLog
+	options []Option
+}
+
+func (this *web) Init() error {
+	eCtx := this.echoCtx
 	eCtx.HideBanner = true
 	eCtx.HidePort = false
 	eCtx.DisableHTTP2 = true
-	eCtx.HTTPErrorHandler = globalErrorHandle
+	eCtx.HTTPErrorHandler = this.globalErrorHandle
 	eCtx.Validator = kboot.MValidator()
-	eCtx.Use(mid.WithContext(ctx))
+	// custom context
+	eCtx.Use(mid.WithContext(this.ctx))
 	//recovery
 	eCtx.Use(middleware.Recover())
 	// request id
@@ -33,43 +45,32 @@ func _initEcho(unit kboot.Unit, cfg *Config) (kboot.ExecFunc, error) {
 	eCtx.Use(middleware.CORS())
 	//gzip
 	eCtx.Use(middleware.Gzip())
+	// trace zap logger
+	eCtx.Use(mid.WithTraceLogger(this.logger))
 	//logger
 	loggerOption := mid.LogNone
-	if cfg.Debug {
+	if this.cfg.Debug {
 		loggerOption = mid.LogReqHeader | mid.LogRespHeader | mid.LogJson | mid.LogForm
 	}
-	eCtx.Use(mid.Log(loggerOption))
+	eCtx.Use(mid.Dump(loggerOption))
 
-	if cfg.Auth != nil && cfg.Auth.Enabled {
-		eCtx.Use(mid.AuthWithConfig(*cfg.Auth))
+	if this.cfg.Auth != nil {
+		eCtx.Use(mid.AuthWithConfig(*this.cfg.Auth))
 	} else {
 		eCtx.Use(mid.Auth())
 	}
-	// start watcher
-	exitChan := make(chan error)
-
-	return func(unit kboot.Unit) kboot.ExitResult {
-		for _, opt := range _options {
-			err := opt.apply(eCtx)
-			if err != nil {
-				internal.Log.Panic("use option failed ", err)
-			}
-		}
-		go func() {
-			exitChan <- eCtx.Start(cfg.ListenAddress)
-		}()
-		select {
-		case err := <-exitChan:
-			internal.Log.Info("API server exit", zap.Error(err))
-			return kboot.NewSuccessResult()
-		case <-unit.Done():
-			_ = eCtx.Shutdown(unit.GetContext())
-		}
-		return kboot.NewSuccessResult()
-	}, nil
+	return nil
 }
 
-func globalErrorHandle(err error, ctx echo.Context) {
+func (this *web) Start() error {
+	return this.echoCtx.Start(this.cfg.ListenAddress)
+}
+
+func (this *web) Shutdown() error {
+	return this.echoCtx.Shutdown(this.ctx)
+}
+
+func (this *web) globalErrorHandle(err error, ctx echo.Context) {
 	if err == nil {
 		return
 	}
@@ -101,7 +102,7 @@ func globalErrorHandle(err error, ctx echo.Context) {
 	default:
 		ctx.Echo().DefaultHTTPErrorHandler(err, ctx)
 	}
-	internal.Log.Warn("api global error handler",
+	this.logger.Warn("api global error handler",
 		zap.String("path", ctx.Path()),
 		zap.Uint8("errCategory", errCategory),
 		zap.Error(err))

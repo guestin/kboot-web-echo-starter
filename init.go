@@ -2,16 +2,24 @@ package web
 
 import (
 	"github.com/guestin/kboot"
-	"github.com/guestin/kboot-web-echo-starter/internal"
+	"github.com/labstack/echo/v4"
 )
 
 func init() {
 	kboot.RegisterUnit(ModuleName, _init)
+	_gWeb = &web{
+		ctx:     nil,
+		echoCtx: echo.New(),
+		cfg:     nil,
+		unit:    nil,
+		options: make([]Option, 0),
+	}
 }
 
 func _init(unit kboot.Unit) (kboot.ExecFunc, error) {
-	internal.Log = kboot.GetTaggedLogger(ModuleName)
-	internal.ZapLog = kboot.GetTaggedZapLogger(ModuleName)
+	_gWeb.ctx = unit.GetContext()
+	_gWeb.unit = unit
+	_gWeb.logger = kboot.GetTaggedZapLogger(ModuleName)
 	cfg := &Config{
 		ListenAddress: DefaultListenAddress,
 		Debug:         false,
@@ -25,5 +33,16 @@ func _init(unit kboot.Unit) (kboot.ExecFunc, error) {
 	if err != nil {
 		return nil, err
 	}
-	return _initEcho(unit, cfg)
+	_gWeb.cfg = cfg
+	err = _gWeb.Init()
+	if err != nil {
+		return nil, err
+	}
+	return func(unit kboot.Unit) kboot.ExitResult {
+		<-unit.Done()
+		return kboot.ExitResult{
+			Code:  0,
+			Error: nil,
+		}
+	}, nil
 }

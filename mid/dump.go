@@ -15,11 +15,11 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-type LoggerOption uint64
+type DumpOption uint64
 
 // noinspection ALL
 const (
-	LogNone LoggerOption = 1 << iota
+	LogNone DumpOption = 1 << iota
 	LogReqHeader
 	LogRespHeader
 	LogForm
@@ -62,11 +62,11 @@ const (
 )
 
 // noinspection ALL
-func Log(option LoggerOption) echo.MiddlewareFunc {
-	return LogWithConfig(LoggerConfig{Option: option})
+func Dump(option DumpOption) echo.MiddlewareFunc {
+	return DumpWithConfig(LoggerConfig{Option: option})
 }
 
-func LogWithConfig(conf LoggerConfig) echo.MiddlewareFunc {
+func DumpWithConfig(conf LoggerConfig) echo.MiddlewareFunc {
 	option := conf.Option
 	formatter := conf.Formatter
 	if formatter == nil {
@@ -133,7 +133,7 @@ func LogWithConfig(conf LoggerConfig) echo.MiddlewareFunc {
 	}
 }
 
-func shouldDump(option LoggerOption, contentType string) bool {
+func shouldDump(option DumpOption, contentType string) bool {
 	return (option&LogAll != 0 ||
 		option&LogForm != 0 && strings.Contains(contentType, MIMEApplicationForm)) ||
 		(option&LogMultipartForm != 0 && strings.Contains(contentType, MIMEMultipartForm)) ||
@@ -144,7 +144,7 @@ func shouldDump(option LoggerOption, contentType string) bool {
 		(option&LogJs != 0 && strings.Contains(contentType, MIMEApplicationJavaScript))
 }
 
-func shouldCacheBody(option LoggerOption) bool {
+func shouldCacheBody(option DumpOption) bool {
 	return option&LogAll != 0 ||
 		option&LogForm != 0 ||
 		option&LogMultipartForm != 0 ||
@@ -178,7 +178,7 @@ func (w *bodyDumpResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 var DefaultWriter io.Writer = os.Stdout
 
-// LoggerConfig defines the config for Log middleware.
+// LoggerConfig defines the config for Dump middleware.
 type LoggerConfig struct {
 	// Optional. Default value is gin.defaultLogFormatter
 	Formatter LogFormatter
@@ -187,7 +187,7 @@ type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultWriter.
 	Output io.Writer
 
-	Option LoggerOption
+	Option DumpOption
 }
 
 type consoleColorModeValue int
