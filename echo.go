@@ -63,6 +63,9 @@ func (this *web) Init() error {
 }
 
 func (this *web) Start() error {
+	for _, opt := range this.options {
+		opt.apply(this)
+	}
 	return this.echoCtx.Start(this.cfg.ListenAddress)
 }
 
