@@ -86,6 +86,11 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			}
 			checkErrAndFlush(ctx, cfg)
 		}()
+		preErr := ctx.Get(CtxErrorKey)
+		if preErr != nil {
+
+			return nil
+		}
 		inParams := make([]reflect.Value, 0)
 		if inFlags&handlerHasCtx != 0 {
 			inParams = append(inParams, reflect.ValueOf(ctx))
@@ -109,12 +114,6 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 				err = ctx.Bind(req)
 				// reset the body for next bind
 				ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody))
-				//stream := internal.NewReplayBuffer(ctx.Request().Body)
-				//ctx.Request().Body = stream
-				// bind
-				//err = ctx.Bind(req)
-				//// seek back to start
-				//_, _ = stream.Seek(0, io.SeekStart)
 			} else {
 				// bind
 				err = ctx.Bind(req)
