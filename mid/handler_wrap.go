@@ -1,12 +1,12 @@
 package mid
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"runtime/debug"
 
 	"github.com/guestin/kboot"
-	"github.com/guestin/kboot-web-echo-starter/internal"
 	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/guestin/mob/merrors"
 	"github.com/labstack/echo/v4"
@@ -99,13 +99,22 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			} else {
 				req = reflect.New(inType).Interface()
 			}
-			if cfg.AllowDuplicateBind && ctx.Request().Body != nil {
-				stream := internal.NewReplayBuffer(ctx.Request().Body)
-				ctx.Request().Body = stream
+			if cfg.AllowDuplicateBind {
+				reqBody := make([]byte, 0)
+				if ctx.Request().Body != nil {
+					reqBody, _ = io.ReadAll(ctx.Request().Body)
+				}
+				ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody))
 				// bind
 				err = ctx.Bind(req)
-				// seek back to start
-				_, _ = stream.Seek(0, io.SeekStart)
+				// reset the body for next bind
+				ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody))
+				//stream := internal.NewReplayBuffer(ctx.Request().Body)
+				//ctx.Request().Body = stream
+				// bind
+				//err = ctx.Bind(req)
+				//// seek back to start
+				//_, _ = stream.Seek(0, io.SeekStart)
 			} else {
 				// bind
 				err = ctx.Bind(req)
