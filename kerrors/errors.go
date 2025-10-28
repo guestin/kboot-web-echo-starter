@@ -130,7 +130,4 @@ func ErrInternalf(format string, arg ...interface{}) merrors.Error {
 var (
 	Ok          = NewErr(CodeOk)
 	ErrNotFound = NewErr(CodeNotFound)
-	//ErrDuplicateAdd      = NewErr(CodeDuplicateAdd)
-	//ErrInvalidParams     = NewErr(CodeInvalidParams)
-	//ErrInternalServer = NewErr(CodeInternalServer)
 )

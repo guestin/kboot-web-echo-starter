@@ -2,6 +2,7 @@ package web
 
 import (
 	"github.com/guestin/kboot"
+	"github.com/guestin/kboot-web-echo-starter/mid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -12,7 +13,6 @@ func init() {
 		echoCtx: echo.New(),
 		cfg:     nil,
 		unit:    nil,
-		options: make([]Option, 0),
 	}
 }
 
@@ -23,8 +23,8 @@ func _init(unit kboot.Unit) (kboot.ExecFunc, error) {
 	cfg := &Config{
 		ListenAddress: DefaultListenAddress,
 		Debug:         false,
-		Auth:          nil,
-		Cors:          nil,
+		Auth:          mid.DefaultAuthConfig,
+		ACL:           mid.DefaultACLConfig,
 	}
 	err := kboot.UnmarshalSubConfig(ModuleName, cfg,
 		kboot.MustBindEnv(CfgKeyListen),

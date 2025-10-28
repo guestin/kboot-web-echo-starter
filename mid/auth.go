@@ -13,26 +13,26 @@ import (
 )
 
 type (
-	IUserData interface {
-		GetUid() string
-		GetExpireAt() int64
+	AuthSessionInfo interface {
+		UserId() string
+		ExpireAt() int64
 	}
-
-	AuthSession struct {
-		IsAnonymous bool
-		Uid         string
-		SessionId   string
-		ExpireAt    int64
-		ClientIp    string
-		ClientUA    string
-		UserData    IUserData
+	AuthContext interface {
+		IsAnonymous() bool
+		GetUserId() string
+		GetSessionId() string
+		ExpireAt() int64
+		ClientIp() string
+		ClientUA() string
+		SessionInfo() AuthSessionInfo
 	}
-	SessionCheckCallBack func(ctx echo.Context, sessionId string) (IUserData, error)
-	AuthConfig           struct {
+	SessionLoadFunc func(ctx echo.Context, sessionId string) (AuthSessionInfo, error)
+	AuthConfig      struct {
 		Enabled              bool     `toml:"enabled" mapstructure:"enabled"` //是否启用，启用后将解析session info
 		Whitelist            []string `toml:"whitelist" mapstructure:"whitelist"`
 		SessionIdKey         string   `toml:"sessionIdKey" mapstructure:"sessionIdKey"`
 		SessionExpireInHours int      `toml:"sessionExpireInHours" validate:"gte=0,lte=720" mapstructure:"sessionExpireInHours"`
+		SessionLoadFunc      SessionLoadFunc
 	}
 )
 
@@ -41,29 +41,58 @@ var DefaultAuthConfig = AuthConfig{
 	Whitelist:    []string{},
 	SessionIdKey: "kt-session-id",
 }
-var _AuthCheckCbFn SessionCheckCallBack = nil
 
-func SetupAuthCheckFn(cb SessionCheckCallBack) {
-	_AuthCheckCbFn = cb
+type _authCtx struct {
+	isAnonymous bool
+	userId      string
+	sessionId   string
+	expireAt    int64
+	clientIp    string
+	clientUA    string
+	sessionInfo AuthSessionInfo
 }
 
-func (this *AuthSession) reset(realIp string, ua string) {
+func (this *_authCtx) IsAnonymous() bool {
+	return this.isAnonymous
+}
+
+func (this *_authCtx) GetUserId() string {
+	return this.userId
+}
+
+func (this *_authCtx) GetSessionId() string {
+	return this.sessionId
+}
+
+func (this *_authCtx) ExpireAt() int64 {
+	return this.expireAt
+}
+
+func (this *_authCtx) ClientIp() string {
+	return this.clientIp
+}
+
+func (this *_authCtx) ClientUA() string {
+	return this.clientUA
+}
+
+func (this *_authCtx) SessionInfo() AuthSessionInfo {
+	return this.sessionInfo
+}
+
+func (this *_authCtx) reset(realIp string, ua string) {
 	now := time.Now()
 	randomId := fmt.Sprintf("ANONYMOUS_%s_%s", now.Format("060102150405.000000"), realIp)
-	this.IsAnonymous = true
-	this.SessionId = ""
-	this.Uid = randomId
-	this.UserData = nil
-	this.ClientIp = realIp
-	this.ClientUA = ua
+	this.isAnonymous = true
+	this.sessionId = ""
+	this.userId = randomId
+	this.sessionInfo = nil
+	this.clientIp = realIp
+	this.clientUA = ua
 }
 
-func CurrentSession(ctx echo.Context) *AuthSession {
-	return ctx.Get(CtxCallerInfoKey).(*AuthSession)
-}
-
-func CurrentSessionData[T any](ctx echo.Context) T {
-	return ctx.Get(CtxCallerInfoKey).(*AuthSession).UserData.(T)
+func CurrentAuthContext(ctx echo.Context) AuthContext {
+	return ctx.Get(CtxCallerInfoKey).(AuthContext)
 }
 
 func Auth() echo.MiddlewareFunc {
@@ -86,17 +115,18 @@ func AuthWithConfig(config AuthConfig) echo.MiddlewareFunc {
 			excludeRegList = append(excludeRegList, reg)
 		}
 	}
-	sessionPool := &sync.Pool{
-		New: func() interface{} { return new(AuthSession) },
+	authCtxPool := &sync.Pool{
+		New: func() interface{} { return new(_authCtx) },
 	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			sessionInfo := sessionPool.Get().(*AuthSession)
-			sessionInfo.reset(ctx.RealIP(), ctx.Request().UserAgent())
+			authCtx := authCtxPool.Get().(*_authCtx)
+			authCtx.reset(ctx.RealIP(), ctx.Request().UserAgent())
 			defer func() {
-				sessionPool.Put(sessionInfo)
+				authCtxPool.Put(authCtx)
 				ctx.Set(CtxCallerInfoKey, nil)
 			}()
+			ctx.Set(CtxCallerInfoKey, authCtx)
 			reqPath := ctx.Request().URL.String()
 			ignore := false
 			if !config.Enabled {
@@ -109,31 +139,23 @@ func AuthWithConfig(config AuthConfig) echo.MiddlewareFunc {
 					}
 				}
 			}
-			token := ctx.Request().Header.Get(config.SessionIdKey)
-			if len(token) == 0 {
-				token = ctx.QueryParam(config.SessionIdKey)
+			sessionId := ctx.Request().Header.Get(config.SessionIdKey)
+			if len(sessionId) == 0 {
+				sessionId = ctx.QueryParam(config.SessionIdKey)
 			}
-			if len(token) == 0 && !ignore {
+			if len(sessionId) == 0 && !ignore {
 				return kerrors.ErrUnauthorized()
 			}
-			sessionInfo.SessionId = token
-			var userData IUserData
-			var err error
-			if len(token) > 0 {
-				if _AuthCheckCbFn != nil {
-					userData, err = _AuthCheckCbFn(ctx, token)
-					if err != nil && !ignore {
-						return err
-					}
+			authCtx.sessionId = sessionId
+			if config.SessionLoadFunc != nil {
+				sessionInfo, err := config.SessionLoadFunc(ctx, sessionId)
+				if err != nil {
+					return err
 				}
+				authCtx.userId = sessionInfo.UserId()
+				authCtx.expireAt = sessionInfo.ExpireAt()
+				authCtx.sessionInfo = sessionInfo
 			}
-			if userData != nil {
-				sessionInfo.IsAnonymous = false
-				sessionInfo.Uid = userData.GetUid()
-				sessionInfo.UserData = userData
-				sessionInfo.ExpireAt = userData.GetExpireAt()
-			}
-			ctx.Set(CtxCallerInfoKey, sessionInfo)
 			return next(ctx)
 		}
 	}

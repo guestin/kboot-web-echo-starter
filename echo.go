@@ -25,7 +25,6 @@ type web struct {
 	cfg     *Config
 	unit    kboot.Unit
 	logger  log.ZapLog
-	options []Option
 }
 
 func (this *web) Init() error {
@@ -37,40 +36,43 @@ func (this *web) Init() error {
 	eCtx.Validator = kboot.MValidator()
 	// custom context
 	eCtx.Use(mid.WithContext(this.ctx))
+	// trace zap logger
+	eCtx.Use(mid.WithTraceLogger(this.logger))
 	//recovery
-	eCtx.Use(middleware.Recover())
+	eCtx.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+		DisablePrintStack: true,
+		LogErrorFunc:      this.panicRecoveryLogFunc,
+	}))
 	// request id
 	eCtx.Use(middleware.RequestID())
 	//cors
 	eCtx.Use(middleware.CORS())
 	//gzip
 	eCtx.Use(middleware.Gzip())
-	// trace zap logger
-	eCtx.Use(mid.WithTraceLogger(this.logger))
 	//logger
 	loggerOption := mid.LogNone
 	if this.cfg.Debug {
 		loggerOption = mid.LogReqHeader | mid.LogRespHeader | mid.LogJson | mid.LogForm
 	}
 	eCtx.Use(mid.Dump(loggerOption))
-
-	if this.cfg.Auth != nil {
-		eCtx.Use(mid.AuthWithConfig(*this.cfg.Auth))
-	} else {
-		eCtx.Use(mid.Auth())
-	}
 	return nil
 }
 
 func (this *web) Start() error {
-	for _, opt := range this.options {
-		opt.apply(this)
-	}
 	return this.echoCtx.Start(this.cfg.ListenAddress)
 }
 
 func (this *web) Shutdown() error {
 	return this.echoCtx.Shutdown(this.ctx)
+}
+
+func (this *web) panicRecoveryLogFunc(ctx echo.Context, err error, stack []byte) error {
+	mid.GetTraceLogger(ctx).Error(
+		"panic recovery",
+		zap.Error(err),
+		zap.Binary("stack", stack[:]),
+	)
+	return kerrors.InternalErr()
 }
 
 func (this *web) globalErrorHandle(err error, ctx echo.Context) {
@@ -81,12 +83,12 @@ func (this *web) globalErrorHandle(err error, ctx echo.Context) {
 	switch err.(type) {
 	case merrors.Error:
 		errCategory = 1
-		_ = ctx.JSON(http.StatusOK, err)
 		// code = 0, means no error
 		if !ctx.Response().Committed {
-			_ = ctx.JSON(http.StatusOK, err)
+			_ = ctx.JSON(http.StatusOK, kerrors.WrapSensitiveErr(err.(merrors.Error)))
 		}
-		if err.(merrors.Error).GetCode() == 0 {
+		if err.(merrors.Error).GetCode() < kerrors.CodeInternalServer {
+			// excepted business error
 			return
 		}
 	case validator.ValidationErrors, mvalidate.ValidateError:

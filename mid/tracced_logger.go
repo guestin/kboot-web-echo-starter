@@ -18,5 +18,5 @@ func WithTraceLogger(rootLogger log.ZapLog) echo.MiddlewareFunc {
 }
 
 func GetTraceLogger(ctx echo.Context) log.ZapLog {
-	return ctx.Get(CtxContextKey).(log.ZapLog)
+	return ctx.Get(CtxZapLoggerKey).(log.ZapLog)
 }

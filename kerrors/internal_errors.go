@@ -30,3 +30,7 @@ func DBRecordRetrieveErr(msg ...interface{}) merrors.Error {
 func DBRecordDeleteErr(msg ...interface{}) merrors.Error {
 	return NewErr(CodeRecordDeleteErr, msg...)
 }
+
+func DBRecordDuplicateErr(msg ...interface{}) merrors.Error {
+	return NewErr(CodeDuplicateAdd, msg...)
+}

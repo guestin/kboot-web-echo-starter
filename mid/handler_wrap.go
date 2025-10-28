@@ -2,21 +2,16 @@ package mid
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"runtime/debug"
-
-	"github.com/guestin/kboot"
-	"github.com/guestin/kboot-web-echo-starter/kerrors"
-	"github.com/guestin/mob/merrors"
-	"github.com/labstack/echo/v4"
-	"github.com/ooopSnake/assert.go"
-	"go.uber.org/zap"
-
 	"net/http"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/guestin/kboot-web-echo-starter/kerrors"
+	"github.com/guestin/mob/merrors"
+	"github.com/labstack/echo/v4"
+	"github.com/ooopSnake/assert.go"
 )
 
 type (
@@ -73,31 +68,13 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			reqIsSlice = true
 		}
 	}
-	return func(ctx echo.Context) error {
-		defer func() {
-			err := recover()
-			if err != nil {
-				kboot.GetTaggedZapLogger("mid").Error("panic recover",
-					zap.Any("error", err),
-					zap.Any("stack", string(debug.Stack())),
-				)
-				ctx.Set(CtxStatusKey, http.StatusInternalServerError)
-				ctx.Set(CtxErrorKey, kerrors.InternalErr("Server is busy"))
-			}
-			checkErrAndFlush(ctx, cfg)
-		}()
-		preErr := ctx.Get(CtxErrorKey)
-		if preErr != nil {
-
-			return nil
-		}
+	return func(ctx echo.Context) (err error) {
 		inParams := make([]reflect.Value, 0)
 		if inFlags&handlerHasCtx != 0 {
 			inParams = append(inParams, reflect.ValueOf(ctx))
 		}
 		//has req data
 		if inFlags&handlerHasReqData != 0 {
-			var err error
 			var req interface{}
 			if reqIsSlice {
 				req = reflect.New(reflect.SliceOf(inType.Elem())).Interface()
@@ -119,9 +96,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 				err = ctx.Bind(req)
 			}
 			if err != nil {
-				ctx.Set(CtxStatusKey, http.StatusOK)
-				ctx.Set(CtxErrorKey, kerrors.ErrBadRequestf("Bad Request :%s ", err))
-				return nil
+				return kerrors.ErrBadRequestf("Bad Request:%s ", err)
 			}
 			if !reqIsPtr {
 				req = reflect.ValueOf(req).Elem().Interface()
@@ -129,9 +104,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			//validate
 			err = ctx.Validate(req)
 			if err != nil {
-				ctx.Set(CtxStatusKey, http.StatusOK)
-				ctx.Set(CtxErrorKey, kerrors.ErrBadRequestf("Bad Request :%s ", err))
-				return nil
+				return kerrors.ErrBadRequestf("Bad Request:%s ", err)
 			}
 			inParams = append(inParams, reflect.ValueOf(req))
 		}
@@ -146,21 +119,32 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 		} else {
 			rspErrIdx = 0
 		}
-		var err error
 		if !outs[rspErrIdx].IsNil() { // check error
 			err = outs[rspErrIdx].Interface().(error)
-			ctx.Set(CtxErrorKey, err)
+			if err != nil {
+				return err
+			}
 		}
+		var respData interface{}
 		if rspDataIdx != -1 {
-			oKind := outs[rspDataIdx].Kind()
-			if oKind == reflect.Ptr || oKind == reflect.Struct {
+			rspKind := outs[rspDataIdx].Kind()
+			if rspKind == reflect.Ptr || rspKind == reflect.Struct {
 				if !(outs[rspDataIdx]).IsNil() {
-					rsp := outs[rspDataIdx].Interface()
-					ctx.Set(CtxRespKey, rsp)
+					respData = outs[rspDataIdx].Interface()
 				}
 			} else {
-				ctx.Set(CtxRespKey, outs[rspDataIdx].Interface())
+				respData = outs[rspDataIdx].Interface()
 			}
+		}
+		var resp interface{}
+		switch err.(type) {
+		case merrors.Error:
+			resp = respData
+		default:
+			resp = kerrors.OkResult(respData)
+		}
+		if !ctx.Response().Committed {
+			_ = ctx.JSON(http.StatusOK, resp)
 		}
 		return nil
 	}
@@ -241,54 +225,4 @@ func checkOutParam(name string, t reflect.Type) (reflect.Type, uint32) {
 		assert.Mustf(false, "'%s' not valid :illegal func return params num", name).Panic()
 	}
 	return outParamType, handlerFlags
-}
-
-func checkErrAndFlush(ctx echo.Context, config *WrapConfig) {
-	//requestId := ctx.Request().Header.Get(echo.HeaderXRequestID)
-	statusCode := 200
-	statusI := ctx.Get(CtxStatusKey)
-	if statusI != nil {
-		if status, ok := statusI.(int); ok && status > 0 {
-			statusCode = status
-		}
-	}
-	var resp interface{} = nil
-	ctxErr := ctx.Get(CtxErrorKey)
-	if ctxErr != nil {
-		if config.SkipFormat {
-			resp = ctxErr
-			goto flush
-		}
-		switch ctxErr.(type) {
-		case merrors.Error:
-			resp = ctxErr
-		case *echo.HTTPError:
-			he := ctxErr.(*echo.HTTPError)
-			resp = merrors.Errorf0(he.Code, "%s", fmt.Sprint(he.Message))
-		default:
-			resp = kerrors.ErrInternalf("Server is busy : %s", ctxErr)
-		}
-		goto flush
-	}
-	resp = ctx.Get(CtxRespKey)
-	if config.SkipFormat {
-		goto flush
-	}
-	if resp != nil {
-		switch resp.(type) {
-		case merrors.Error:
-			goto flush
-		default:
-			resp = kerrors.OkResult(resp)
-		}
-	} else {
-		resp = kerrors.OkResult(nil)
-	}
-
-flush:
-	// has rsp & no error need write response,otherwise err handler will handle
-	if !ctx.Response().Committed && resp != nil {
-		_ = ctx.JSON(statusCode, resp)
-		//_ = ctx.JSONPretty(statusCode, resp,jsonIndent)
-	}
 }
