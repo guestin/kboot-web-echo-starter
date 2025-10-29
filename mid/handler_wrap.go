@@ -15,35 +15,35 @@ import (
 )
 
 type (
-	// WrapConfig defines the config for Format middleware.
-	WrapConfig struct {
+	// wrapCtx defines the config for Format middleware.
+	wrapCtx struct {
 		AllowDuplicateBind bool
 		SkipFormat         bool
 	}
 	WrapOption interface {
-		apply(cfg *WrapConfig)
+		apply(cfg *wrapCtx)
 	}
-	wrapOptionFunc func(cfg *WrapConfig)
+	wrapOptionFunc func(cfg *wrapCtx)
 )
 
-func (f wrapOptionFunc) apply(cfg *WrapConfig) {
+func (f wrapOptionFunc) apply(cfg *wrapCtx) {
 	f(cfg)
 }
 
 func WrapAllowDuplicateBind() WrapOption {
-	return wrapOptionFunc(func(cfg *WrapConfig) {
+	return wrapOptionFunc(func(cfg *wrapCtx) {
 		cfg.AllowDuplicateBind = true
 	})
 }
 
 func SkipFormat() WrapOption {
-	return wrapOptionFunc(func(cfg *WrapConfig) {
+	return wrapOptionFunc(func(cfg *wrapCtx) {
 		cfg.SkipFormat = true
 	})
 }
 
 func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
-	cfg := &WrapConfig{}
+	cfg := &wrapCtx{}
 	for _, opt := range option {
 		if opt != nil {
 			opt.apply(cfg)
@@ -136,6 +136,10 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 				respData = outs[rspDataIdx].Interface()
 			}
 		}
+
+		if cfg.SkipFormat {
+			return ctx.JSON(http.StatusOK, respData)
+		}
 		var resp interface{}
 		switch err.(type) {
 		case merrors.Error:
@@ -144,7 +148,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			resp = kerrors.OkResult(respData)
 		}
 		if !ctx.Response().Committed {
-			_ = ctx.JSON(http.StatusOK, resp)
+			return ctx.JSON(http.StatusOK, resp)
 		}
 		return nil
 	}
