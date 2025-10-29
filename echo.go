@@ -44,7 +44,7 @@ func (this *web) Init() error {
 		LogErrorFunc:      this.panicRecoveryLogFunc,
 	}))
 	// request id
-	eCtx.Use(mid.TraceId())
+	eCtx.Use(mid.RequestID())
 	//cors
 	eCtx.Use(middleware.CORS())
 	//gzip
