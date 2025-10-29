@@ -9,7 +9,7 @@ import (
 func WithTraceLogger(rootLogger log.ZapLog) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			requestId := ctx.Response().Header().Get(echo.HeaderXRequestID)
+			requestId := GetTraceId(ctx)
 			loggerWithTraceId := rootLogger.With(log.UseFields(zap.String("traceId", requestId)))
 			ctx.Set(CtxZapLoggerKey, loggerWithTraceId)
 			return next(ctx)
