@@ -94,7 +94,7 @@ func (this *_authCtx) SessionInfo() AuthSessionInfo {
 
 func (this *_authCtx) reset(realIp string, ua string) {
 	now := time.Now()
-	randomId := fmt.Sprintf("ANONYMOUS_%s_%s", now.Format("060102150405.000000"), realIp)
+	randomId := fmt.Sprintf("ANONYMOUS_%s", now.Format("060102150405.000000"))
 	this.isAnonymous = true
 	this.sessionId = ""
 	this.userId = randomId
