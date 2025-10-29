@@ -73,30 +73,28 @@ func ACL(config ACLConfig) echo.MiddlewareFunc {
 			if !config.Enabled {
 				return next(ctx)
 			}
+			permissions, err := config.ACLPermissionLoadFunc(ctx)
+			if err != nil {
+				return err
+			}
+			aclCtx.allPermissions = permissions[:]
 			if config.Skipper != nil && config.Skipper(ctx) {
 				return next(ctx)
 			}
 			if config.BeforeFunc != nil {
-				err := config.BeforeFunc(ctx)
+				err = config.BeforeFunc(ctx)
 				if err != nil {
 					return err
 				}
 			}
-			if config.ACLPermissionLoadFunc != nil {
-				permissions, err := config.ACLPermissionLoadFunc(ctx)
-				if err != nil {
-					return err
+			for i := range permissions {
+				perm := permissions[i]
+				if perm.Match(ctx) {
+					aclCtx.matchedPermission = append(aclCtx.matchedPermission, perm)
 				}
-				aclCtx.allPermissions = permissions[:]
-				for i := range permissions {
-					perm := permissions[i]
-					if perm.Match(ctx) {
-						aclCtx.matchedPermission = append(aclCtx.matchedPermission, perm)
-					}
-				}
-				if len(aclCtx.matchedPermission) == 0 {
-					return kerrors.ErrForbidden()
-				}
+			}
+			if len(aclCtx.matchedPermission) == 0 {
+				return kerrors.ErrForbidden()
 			}
 			return next(ctx)
 		}
