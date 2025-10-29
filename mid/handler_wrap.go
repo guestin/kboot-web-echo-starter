@@ -49,6 +49,10 @@ func SetReq2Ctx() WrapOption {
 	})
 }
 
+func GetCachedReq(ctx echo.Context) interface{} {
+	return ctx.Get(CtxReqCacheKey)
+}
+
 func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 	cfg := &wrapCtx{}
 	for _, opt := range option {
