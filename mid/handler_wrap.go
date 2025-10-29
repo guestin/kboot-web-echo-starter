@@ -19,6 +19,7 @@ type (
 	wrapCtx struct {
 		AllowDuplicateBind bool
 		SkipFormat         bool
+		SetReq2Ctx         bool
 	}
 	WrapOption interface {
 		apply(cfg *wrapCtx)
@@ -39,6 +40,12 @@ func WrapAllowDuplicateBind() WrapOption {
 func SkipFormat() WrapOption {
 	return wrapOptionFunc(func(cfg *wrapCtx) {
 		cfg.SkipFormat = true
+	})
+}
+
+func SetReq2Ctx() WrapOption {
+	return wrapOptionFunc(func(cfg *wrapCtx) {
+		cfg.SetReq2Ctx = true
 	})
 }
 
@@ -100,6 +107,9 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			}
 			if !reqIsPtr {
 				req = reflect.ValueOf(req).Elem().Interface()
+			}
+			if cfg.SetReq2Ctx {
+				ctx.Set(CtxReqCacheKey, req)
 			}
 			//validate
 			err = ctx.Validate(req)

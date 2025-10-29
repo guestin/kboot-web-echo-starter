@@ -8,6 +8,7 @@ const (
 	CtxCallerInfoKey = "CTX-CALLER-INFO"
 	CtxAclKey        = "CTX-ACL-INFO"
 	CtxAuditKey      = "CTX-AUDIT-INFO"
+	CtxReqCacheKey   = "CTX-REQ-CACHE"
 )
 
 //goland:noinspection ALL
