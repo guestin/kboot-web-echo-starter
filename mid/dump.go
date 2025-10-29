@@ -109,7 +109,9 @@ func DumpWithConfig(conf LoggerConfig) echo.MiddlewareFunc {
 				writer := &bodyDumpResponseWriter{Writer: mw, ResponseWriter: ctx.Response().Writer}
 				ctx.Response().Writer = writer
 			}
-			err := next(ctx)
+			if err := next(ctx); err != nil {
+				ctx.Error(err)
+			}
 			param.TimeStamp = time.Now()
 			param.Latency = param.TimeStamp.Sub(start)
 			param.ClientIP = ctx.RealIP()
@@ -128,7 +130,7 @@ func DumpWithConfig(conf LoggerConfig) echo.MiddlewareFunc {
 				param.ResponseBody = resBody.Bytes()
 			}
 			_, _ = fmt.Fprint(out, formatter(param))
-			return err
+			return nil
 		}
 	}
 }

@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -86,32 +87,34 @@ func (this *web) globalErrorHandle(err error, ctx echo.Context) {
 		return
 	}
 	errCategory := uint8(0) // means default
+	var rsp merrors.Error
+	status := http.StatusOK
 	switch err.(type) {
 	case merrors.Error:
 		errCategory = 1
 		// code = 0, means no error
-		if !ctx.Response().Committed {
-			_ = ctx.JSON(http.StatusOK, kerrors.WrapSensitiveErr(err.(merrors.Error)))
-		}
-		if err.(merrors.Error).GetCode() < kerrors.CodeInternalServer {
-			// excepted business error
-			return
-		}
+		errors.As(err, &rsp)
 	case validator.ValidationErrors, mvalidate.ValidateError:
 		errCategory = 2
-		_ = ctx.JSON(http.StatusOK,
-			merrors.ErrorWrap0(err, kerrors.CodeBadRequest, "bad request params"))
+		rsp = kerrors.ErrBadRequestf("Bad Request :%v", err)
 	case *echo.HTTPError:
 		errCategory = 3
-		he := err.(*echo.HTTPError)
-		_ = ctx.JSON(http.StatusOK,
-			merrors.Errorf0(kerrors.HttpStatus2Code(he.Code), "%s", fmt.Sprint(he.Message)))
+		var he *echo.HTTPError
+		errors.As(err, &he)
+		status = he.Code
+		rsp = kerrors.Errorf(kerrors.HttpStatus2Code(he.Code), "%s", he.Message)
 	case error:
 		errCategory = 4
-		_ = ctx.JSON(http.StatusOK,
-			merrors.ErrorWrap0(err, kerrors.CodeInternalServer, "unexpect error"))
+		rsp = kerrors.InternalErrf("unexpect error :%v", err)
 	default:
 		ctx.Echo().DefaultHTTPErrorHandler(err, ctx)
+	}
+	if !ctx.Response().Committed {
+		_ = ctx.JSON(status, kerrors.WrapSensitiveErr(rsp))
+	}
+	if rsp.GetCode() < kerrors.CodeInternalServer {
+		// excepted business error
+		return
 	}
 	this.logger.Warn("api global error handler",
 		zap.String("path", ctx.Path()),
