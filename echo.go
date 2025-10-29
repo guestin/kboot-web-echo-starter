@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/guestin/kboot"
 	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/guestin/kboot-web-echo-starter/mid"
 	"github.com/guestin/log"
+	"github.com/guestin/mob"
 	"github.com/guestin/mob/merrors"
 	"github.com/guestin/mob/mvalidate"
 	"github.com/labstack/echo/v4"
@@ -44,7 +46,11 @@ func (this *web) Init() error {
 		LogErrorFunc:      this.panicRecoveryLogFunc,
 	}))
 	// request id
-	eCtx.Use(middleware.RequestID())
+	eCtx.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		Generator: func() string {
+			return fmt.Sprintf("%s%s", time.Now().Format("060102"), mob.GenRandomUUID())
+		},
+	}))
 	//cors
 	eCtx.Use(middleware.CORS())
 	//gzip

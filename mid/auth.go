@@ -52,6 +52,18 @@ type _authCtx struct {
 	sessionInfo AuthSessionInfo
 }
 
+type _anonymousSession struct {
+	userId string
+}
+
+func (this *_anonymousSession) UserId() string {
+	return ""
+}
+
+func (this *_anonymousSession) ExpireAt() int64 {
+	return 0
+}
+
 func (this *_authCtx) IsAnonymous() bool {
 	return this.isAnonymous
 }
@@ -86,7 +98,8 @@ func (this *_authCtx) reset(realIp string, ua string) {
 	this.isAnonymous = true
 	this.sessionId = ""
 	this.userId = randomId
-	this.sessionInfo = nil
+	this.sessionInfo = &_anonymousSession{userId: randomId}
+	this.expireAt = time.Now().Add(time.Hour * 24).Unix()
 	this.clientIp = realIp
 	this.clientUA = ua
 }
@@ -147,14 +160,18 @@ func AuthWithConfig(config AuthConfig) echo.MiddlewareFunc {
 				return kerrors.ErrUnauthorized()
 			}
 			authCtx.sessionId = sessionId
-			if config.SessionLoadFunc != nil {
+			if config.SessionLoadFunc != nil && len(sessionId) > 0 {
 				sessionInfo, err := config.SessionLoadFunc(ctx, sessionId)
-				if err != nil {
-					return err
+				if err == nil {
+					authCtx.isAnonymous = false
+					authCtx.userId = sessionInfo.UserId()
+					authCtx.expireAt = sessionInfo.ExpireAt()
+					authCtx.sessionInfo = sessionInfo
+				} else {
+					if !ignore {
+						return kerrors.ErrUnauthorized()
+					}
 				}
-				authCtx.userId = sessionInfo.UserId()
-				authCtx.expireAt = sessionInfo.ExpireAt()
-				authCtx.sessionInfo = sessionInfo
 			}
 			return next(ctx)
 		}
