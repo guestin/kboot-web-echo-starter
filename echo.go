@@ -109,7 +109,7 @@ func (this *web) globalErrorHandle(err error, ctx echo.Context) {
 		// excepted business error
 		return
 	}
-	this.logger.Warn("api global error handler",
+	this.logger.Error("api global error handler",
 		zap.String("path", ctx.Path()),
 		zap.Uint8("errCategory", errCategory),
 		zap.Error(err))
