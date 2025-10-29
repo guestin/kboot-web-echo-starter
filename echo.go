@@ -49,7 +49,7 @@ func (this *web) Init() error {
 	// request id
 	eCtx.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
 		Generator: func() string {
-			return fmt.Sprintf("%s%s", time.Now().Format("060102"), mob.GenRandomUUID())
+			return fmt.Sprintf("%s%s", time.Now().Format("060102"), mob.GenRandomUUID()[6:])
 		},
 	}))
 	//cors
