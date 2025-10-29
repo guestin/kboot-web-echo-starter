@@ -36,6 +36,8 @@ func (this *web) Init() error {
 	eCtx.Validator = kboot.MValidator()
 	// custom context
 	eCtx.Use(mid.WithContext(this.ctx))
+	// request id
+	eCtx.Use(mid.RequestID())
 	// trace zap logger
 	eCtx.Use(mid.WithTraceLogger(this.logger))
 	//recovery
@@ -43,8 +45,6 @@ func (this *web) Init() error {
 		DisablePrintStack: true,
 		LogErrorFunc:      this.panicRecoveryLogFunc,
 	}))
-	// request id
-	eCtx.Use(mid.RequestID())
 	//cors
 	eCtx.Use(middleware.CORS())
 	//gzip
