@@ -70,14 +70,15 @@ func ACL(config ACLConfig) echo.MiddlewareFunc {
 				ctx.Set(CtxAclKey, nil)
 			}()
 			ctx.Set(CtxAclKey, aclCtx)
-			if !config.Enabled {
-				return next(ctx)
-			}
+
 			permissions, err := config.ACLPermissionLoadFunc(ctx)
 			if err != nil {
 				return err
 			}
 			aclCtx.allPermissions = permissions[:]
+			if !config.Enabled {
+				return next(ctx)
+			}
 			if config.Skipper != nil && config.Skipper(ctx) {
 				return next(ctx)
 			}
