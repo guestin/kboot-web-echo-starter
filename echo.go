@@ -40,21 +40,10 @@ func (this *web) Init() error {
 	eCtx.Use(mid.RequestID())
 	// trace zap logger
 	eCtx.Use(mid.WithTraceLogger(this.logger))
-	//recovery
-	eCtx.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
-		DisablePrintStack: true,
-		LogErrorFunc:      this.panicRecoveryLogFunc,
-	}))
 	//cors
 	eCtx.Use(middleware.CORS())
 	//gzip
 	eCtx.Use(middleware.Gzip())
-	//logger
-	loggerOption := mid.LogNone
-	if this.cfg.Debug {
-		loggerOption = mid.LogReqHeader | mid.LogRespHeader | mid.LogJson | mid.LogForm
-	}
-	eCtx.Use(mid.Dump(loggerOption))
 	return nil
 }
 
@@ -64,15 +53,6 @@ func (this *web) Start() error {
 
 func (this *web) Shutdown() error {
 	return this.echoCtx.Shutdown(this.ctx)
-}
-
-func (this *web) panicRecoveryLogFunc(ctx echo.Context, err error, stack []byte) error {
-	mid.GetTraceLogger(ctx).Error(
-		"panic recovery",
-		zap.Error(err),
-		zap.Binary("stack", stack[:]),
-	)
-	return kerrors.InternalErr()
 }
 
 func (this *web) globalErrorHandle(err error, ctx echo.Context) {
@@ -109,7 +89,7 @@ func (this *web) globalErrorHandle(err error, ctx echo.Context) {
 		// excepted business error
 		return
 	}
-	this.logger.Error("api global error handler",
+	this.logger.Warn("api global error handler",
 		zap.String("path", ctx.Path()),
 		zap.Uint8("errCategory", errCategory),
 		zap.Error(err))

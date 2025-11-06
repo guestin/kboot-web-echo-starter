@@ -61,12 +61,14 @@ const (
 	MIMEOctetStream                      = "application/octet-stream"
 )
 
+// Dump will delete
 // noinspection ALL
 func Dump(option DumpOption) echo.MiddlewareFunc {
-	return DumpWithConfig(LoggerConfig{Option: option})
+	return DumpWithConfig(DumpConfig{Option: option})
 }
 
-func DumpWithConfig(conf LoggerConfig) echo.MiddlewareFunc {
+// DumpWithConfig will delete
+func DumpWithConfig(conf DumpConfig) echo.MiddlewareFunc {
 	option := conf.Option
 	formatter := conf.Formatter
 	if formatter == nil {
@@ -180,8 +182,9 @@ func (w *bodyDumpResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 var DefaultWriter io.Writer = os.Stdout
 
-// LoggerConfig defines the config for Dump middleware.
-type LoggerConfig struct {
+// DumpConfig defines the config for Dump middleware.
+type DumpConfig struct {
+	Skipper Skipper
 	// Optional. Default value is gin.defaultLogFormatter
 	Formatter LogFormatter
 
@@ -239,6 +242,7 @@ func (p *LogFormatterParams) FormattedRequestStr() string {
 func (p *LogFormatterParams) FormattedResponseStr() string {
 	return formatHeadersAndBody(">>>>>>>>>>\n", p.ResponseHeader, p.ResponseBody)
 }
+
 func formatHeadersAndBody(prefix string, header http.Header, body []byte) string {
 	buf := bytes.Buffer{}
 	if len(header) > 0 || len(body) > 0 {

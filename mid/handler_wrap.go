@@ -8,10 +8,14 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/guestin/mob/merrors"
+	"github.com/guestin/mob/mvalidate"
 	"github.com/labstack/echo/v4"
 	"github.com/ooopSnake/assert.go"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type (
@@ -80,6 +84,17 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 		}
 	}
 	return func(ctx echo.Context) (err error) {
+		defer func() {
+			pe := recover()
+			if pe != nil {
+				err = errors.Errorf("handler panic: %v", pe)
+				GetTraceLogger(ctx).Error(
+					"panic recovery",
+					zap.Error(err))
+			}
+			errorHandle(err, ctx)
+			err = nil
+		}()
 		inParams := make([]reflect.Value, 0)
 		if inFlags&handlerHasCtx != 0 {
 			inParams = append(inParams, reflect.ValueOf(ctx))
@@ -107,7 +122,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 				err = ctx.Bind(req)
 			}
 			if err != nil {
-				return kerrors.ErrBadRequestf("Bad Request:%s ", err)
+				return err
 			}
 			if !reqIsPtr {
 				req = reflect.ValueOf(req).Elem().Interface()
@@ -118,7 +133,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			//validate
 			err = ctx.Validate(req)
 			if err != nil {
-				return kerrors.ErrBadRequestf("Bad Request:%s ", err)
+				return err
 			}
 			inParams = append(inParams, reflect.ValueOf(req))
 		}
@@ -166,6 +181,46 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 		}
 		return nil
 	}
+}
+
+func errorHandle(err error, ctx echo.Context) {
+	if err == nil {
+		return
+	}
+	errCategory := uint8(0) // means default
+	var rsp merrors.Error
+	status := http.StatusOK
+	switch err.(type) {
+	case merrors.Error:
+		errCategory = 1
+		// code = 0, means no error
+		errors.As(err, &rsp)
+	case validator.ValidationErrors, mvalidate.ValidateError:
+		errCategory = 2
+		rsp = kerrors.ErrBadRequestf("Bad Request :%v", err)
+	case *echo.HTTPError:
+		errCategory = 3
+		var he *echo.HTTPError
+		errors.As(err, &he)
+		status = he.Code
+		rsp = kerrors.Errorf(kerrors.HttpStatus2Code(he.Code), "%s", he.Message)
+	case error:
+		errCategory = 4
+		rsp = kerrors.InternalErrf("unexpect error :%v", err)
+	default:
+		ctx.Echo().DefaultHTTPErrorHandler(err, ctx)
+	}
+	if !ctx.Response().Committed {
+		_ = ctx.JSON(status, kerrors.WrapSensitiveErr(rsp))
+	}
+	if rsp.GetCode() < kerrors.CodeInternalServer {
+		// excepted business error
+		return
+	}
+	GetTraceLogger(ctx).Error("handler error",
+		zap.String("path", ctx.Path()),
+		zap.Uint8("errCategory", errCategory),
+		zap.Error(err))
 }
 
 func getFuncName(fv reflect.Value) string {
