@@ -36,10 +36,6 @@ func (this *web) Init() error {
 	eCtx.Validator = kboot.MValidator()
 	// custom context
 	eCtx.Use(mid.WithContext(this.ctx))
-	// trace
-	eCtx.Use(mid.TraceWithConfig(mid.TraceConfig{
-		TargetHeader: this.cfg.Trace.TargetHeader,
-	}))
 	//cors
 	eCtx.Use(middleware.CORS())
 	//gzip

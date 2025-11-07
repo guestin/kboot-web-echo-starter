@@ -3,7 +3,6 @@ package mid
 import (
 	"sync"
 
-	"github.com/guestin/kboot"
 	"github.com/guestin/kboot-web-echo-starter/kerrors"
 	"github.com/labstack/echo/v4"
 )
@@ -56,7 +55,7 @@ func ACL(config ACLConfig) echo.MiddlewareFunc {
 		config.Skipper = DefaultSkipper
 	}
 	if config.ACLPermissionLoadFunc == nil {
-		kboot.GetTaggedZapLogger("mid.acl").Panic("ACL permission loader not set")
+		panic("ACL permission loader not be nil")
 	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		ctxPool := &sync.Pool{

@@ -64,15 +64,7 @@ var (
 
 func Logger(logger log.ZapLog) echo.MiddlewareFunc {
 	return LoggerWithConfig(LoggerConfig{
-		Skipper:           DefaultLoggerConfig.Skipper,
-		Logger:            logger,
-		LogReqHeader:      DefaultLoggerConfig.LogReqHeader,
-		HideHeader:        DefaultLoggerConfig.HideHeader,
-		LogReqBody:        DefaultLoggerConfig.LogReqBody,
-		LogReqBodyOption:  DefaultLoggerConfig.LogRespBodyOption,
-		LogRespHeader:     DefaultLoggerConfig.LogRespHeader,
-		LogRespBody:       DefaultLoggerConfig.LogRespBody,
-		LogRespBodyOption: DefaultLoggerConfig.LogReqBodyOption,
+		Logger: logger,
 	})
 }
 
