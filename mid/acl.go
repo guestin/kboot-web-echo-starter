@@ -18,7 +18,7 @@ type (
 	}
 	ACLPermissionLoadFunc func(ctx echo.Context) ([]ACLPermission, error)
 	ACLConfig             struct {
-		Enabled               bool `toml:"enabled" mapstructure:"enabled"`
+		Enabled               bool `toml:"enabled" json:"enabled" mapstructure:"enabled"`
 		Skipper               Skipper
 		BeforeFunc            BeforeFunc
 		ACLPermissionLoadFunc ACLPermissionLoadFunc

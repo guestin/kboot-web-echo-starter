@@ -28,10 +28,10 @@ type (
 	}
 	SessionLoadFunc func(ctx echo.Context, sessionId string) (AuthSessionInfo, error)
 	AuthConfig      struct {
-		Enabled              bool     `toml:"enabled" mapstructure:"enabled"` //是否启用，启用后将解析session info
-		Whitelist            []string `toml:"whitelist" mapstructure:"whitelist"`
-		SessionIdKey         string   `toml:"sessionIdKey" mapstructure:"sessionIdKey"`
-		SessionExpireInHours int      `toml:"sessionExpireInHours" validate:"gte=0,lte=720" mapstructure:"sessionExpireInHours"`
+		Enabled              bool     `toml:"enabled" json:"enabled" mapstructure:"enabled"` //是否启用，启用后将解析session info
+		Whitelist            []string `toml:"whitelist" json:"whitelist" mapstructure:"whitelist"`
+		SessionIdKey         string   `toml:"sessionIdKey" json:"sessionIdKey" mapstructure:"sessionIdKey"`
+		SessionExpireInHours int      `toml:"sessionExpireInHours" json:"sessionExpireInHours" validate:"gte=0,lte=720" mapstructure:"sessionExpireInHours"`
 		SessionLoadFunc      SessionLoadFunc
 	}
 )

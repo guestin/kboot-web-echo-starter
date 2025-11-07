@@ -15,10 +15,11 @@ const (
 
 type (
 	Config struct {
-		ListenAddress string          `toml:"listen" validate:"required" mapstruct:"listen"`
-		Debug         bool            `toml:"debug" mapstructure:"debug"`
-		Auth          mid.AuthConfig  `toml:"auth" validate:"omitempty" mapstruct:"auth"`
-		ACL           mid.ACLConfig   `toml:"acl" validate:"omitempty" mapstruct:"acl"`
-		Audit         mid.AuditConfig `toml:"audit" validate:"omitempty" mapstruct:"audit"`
+		ListenAddress string              `toml:"listen" validate:"required" mapstruct:"listen"`
+		Debug         bool                `toml:"debug" mapstructure:"debug"`
+		Auth          mid.AuthConfig      `toml:"auth" validate:"omitempty" mapstruct:"auth"`
+		ACL           mid.ACLConfig       `toml:"acl" validate:"omitempty" mapstruct:"acl"`
+		Audit         mid.AuditConfig     `toml:"audit" validate:"omitempty" mapstruct:"audit"`
+		Trace         mid.RequestIDConfig `toml:"trace" validate:"omitempty" mapstruct:"trace"`
 	}
 )

@@ -21,7 +21,7 @@ type RequestIDConfig struct {
 	RequestIDHandler func(echo.Context, string)
 
 	// TargetHeader defines what header to look for to populate the id
-	TargetHeader string
+	TargetHeader string `toml:"targetHeader" json:"targetHeader"`
 }
 
 // DefaultRequestIDConfig is the default RequestID middleware config.

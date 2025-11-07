@@ -37,7 +37,9 @@ func (this *web) Init() error {
 	// custom context
 	eCtx.Use(mid.WithContext(this.ctx))
 	// request id
-	eCtx.Use(mid.RequestID())
+	eCtx.Use(mid.RequestIDWithConfig(mid.RequestIDConfig{
+		TargetHeader: this.cfg.Trace.TargetHeader,
+	}))
 	// trace zap logger
 	eCtx.Use(mid.WithTraceLogger(this.logger))
 	//cors

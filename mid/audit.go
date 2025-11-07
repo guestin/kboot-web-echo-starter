@@ -26,7 +26,7 @@ type (
 	}
 	FlushFunc   func(ctx echo.Context)
 	AuditConfig struct {
-		Enabled   bool `toml:"enabled" mapstructure:"enabled"`
+		Enabled   bool `toml:"enabled" json:"enabled" mapstructure:"enabled"`
 		Skipper   Skipper
 		FlushFunc FlushFunc
 	}
