@@ -10,7 +10,7 @@ import (
 
 func Recovery(logger log.ZapLog) echo.MiddlewareFunc {
 	if logger == nil {
-		panic("logger must not be nil")
+		panic("Logger must not be nil")
 	}
 	return middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
