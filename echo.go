@@ -36,6 +36,8 @@ func (this *web) Init() error {
 	eCtx.Validator = kboot.MValidator()
 	// custom context
 	eCtx.Use(mid.WithContext(this.ctx))
+	// request id
+	eCtx.Use(middleware.RequestID())
 	//cors
 	eCtx.Use(middleware.CORS())
 	//gzip
