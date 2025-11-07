@@ -61,13 +61,12 @@ const (
 	MIMEOctetStream                      = "application/octet-stream"
 )
 
-// Dump will delete
-// noinspection ALL
+// Dump DEPRECATED:  will delete
 func Dump(option DumpOption) echo.MiddlewareFunc {
 	return DumpWithConfig(DumpConfig{Option: option})
 }
 
-// DumpWithConfig will delete
+// DumpWithConfig DEPRECATED:  will delete
 func DumpWithConfig(conf DumpConfig) echo.MiddlewareFunc {
 	option := conf.Option
 	formatter := conf.Formatter

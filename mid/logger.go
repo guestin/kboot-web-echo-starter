@@ -100,9 +100,7 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 	config.Logger = config.Logger.With(log.WithZapOptions(zap.WithCaller(false)))
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			if config.Skipper(ctx) {
-				return next(ctx)
-			}
+			skip := config.Skipper(ctx)
 			begin := time.Now()
 			traceId := GetTraceId(ctx)
 			logger := config.Logger
@@ -118,25 +116,27 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 			}
 			clientIp := ctx.RealIP()
 			logger.Info(fmt.Sprintf("<<<<<<<<<< %s | %s %s", clientIp, method, relUrl))
-			if *config.LogReqHeader {
-				loggerHeader(ctx.Request().Header, logger, hideHeader)
-			}
-			reqCt := ctx.Request().Header.Get(echo.HeaderContentType)
-			if *config.LogReqBody && ctx.Request().ContentLength > 0 && shouldLogBody(config.LogReqBodyOption, reqCt) {
-				reqBody := make([]byte, 0)
-				reqBody, _ = io.ReadAll(ctx.Request().Body)
-				ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody)) // reset
-				bodyLines := strings.Split(string(reqBody), "\n")
-				logger.Debug("Body:")
-				for _, line := range bodyLines {
-					logger.Debug(line)
-				}
-			}
 			resBody := new(bytes.Buffer)
-			if *config.LogRespBody {
-				mw := io.MultiWriter(ctx.Response().Writer, resBody)
-				writer := &loggerBodyHijackWriter{Writer: mw, ResponseWriter: ctx.Response().Writer}
-				ctx.Response().Writer = writer
+			if !skip {
+				if *config.LogReqHeader {
+					loggerHeader(ctx.Request().Header, logger, hideHeader)
+				}
+				reqCt := ctx.Request().Header.Get(echo.HeaderContentType)
+				if *config.LogReqBody && ctx.Request().ContentLength > 0 && shouldLogBody(config.LogReqBodyOption, reqCt) {
+					reqBody := make([]byte, 0)
+					reqBody, _ = io.ReadAll(ctx.Request().Body)
+					ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody)) // reset
+					bodyLines := strings.Split(string(reqBody), "\n")
+					logger.Debug("Body:")
+					for _, line := range bodyLines {
+						logger.Debug(line)
+					}
+				}
+				if *config.LogRespBody {
+					mw := io.MultiWriter(ctx.Response().Writer, resBody)
+					writer := &loggerBodyHijackWriter{Writer: mw, ResponseWriter: ctx.Response().Writer}
+					ctx.Response().Writer = writer
+				}
 			}
 			err := next(ctx)
 			latency := time.Now().Sub(begin)
@@ -154,15 +154,17 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 				method,
 				relUrl),
 			)
-			if *config.LogRespHeader {
-				loggerHeader(ctx.Response().Header(), logger, hideHeader)
-			}
-			resCt := ctx.Response().Header().Get(echo.HeaderContentType)
-			if *config.LogRespBody && bodySize > 0 && shouldLogBody(config.LogRespBodyOption, resCt) {
-				bodyLines := strings.Split(resBody.String(), "\n")
-				logger.Debug("Body:")
-				for _, line := range bodyLines {
-					logger.Debug(line)
+			if !skip {
+				if *config.LogRespHeader {
+					loggerHeader(ctx.Response().Header(), logger, hideHeader)
+				}
+				resCt := ctx.Response().Header().Get(echo.HeaderContentType)
+				if *config.LogRespBody && bodySize > 0 && shouldLogBody(config.LogRespBodyOption, resCt) {
+					bodyLines := strings.Split(resBody.String(), "\n")
+					logger.Debug("Body:")
+					for _, line := range bodyLines {
+						logger.Debug(line)
+					}
 				}
 			}
 			if err != nil {
