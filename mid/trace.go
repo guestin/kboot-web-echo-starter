@@ -33,7 +33,7 @@ var DefaultTraceConfig = TraceConfig{
 	Logger:       nil,
 	Skipper:      DefaultSkipper,
 	Generator:    generator,
-	TargetHeader: echo.HeaderXRequestID,
+	TargetHeader: "Kboot-Trace-Id",
 }
 
 // Trace returns a X-Request-ID middleware.
@@ -56,7 +56,7 @@ func TraceWithConfig(config TraceConfig) echo.MiddlewareFunc {
 		config.Generator = generator
 	}
 	if config.TargetHeader == "" {
-		config.TargetHeader = echo.HeaderXRequestID
+		config.TargetHeader = DefaultTraceConfig.TargetHeader
 	}
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
