@@ -139,6 +139,9 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 				ctx.Response().Writer = writer
 			}
 			err := next(ctx)
+			if err != nil {
+				ctx.Error(err)
+			}
 			latency := time.Now().Sub(begin)
 			statusCode := ctx.Response().Status
 			bodySize := ctx.Response().Size
@@ -164,9 +167,6 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 				for _, line := range bodyLines {
 					logger.Debug(line)
 				}
-			}
-			if err != nil {
-				return err
 			}
 			return nil
 		}
