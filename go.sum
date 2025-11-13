@@ -8,8 +8,6 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/gabriel-vasile/mimetype v1.4.10 h1:zyueNbySn/z8mJZHLt6IPw0KoZsiQNszIpU+bX4+ZK0=
-github.com/gabriel-vasile/mimetype v1.4.10/go.mod h1:d+9Oxyo1wTzWdyVUPMmXFvp4F9tea18J8ufA774AB3s=
 github.com/gabriel-vasile/mimetype v1.4.11 h1:AQvxbp830wPhHTqc1u7nzoLT+ZFxGY7emj5DR5DYFik=
 github.com/gabriel-vasile/mimetype v1.4.11/go.mod h1:d+9Oxyo1wTzWdyVUPMmXFvp4F9tea18J8ufA774AB3s=
 github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=
@@ -31,14 +29,8 @@ github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX
 github.com/google/uuid v1.2.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/guestin/kboot v0.1.0-beta.1 h1:KccFrjGMpDqmn9MTXtXdqPq8suXlwis9CzBlXYG5AJs=
-github.com/guestin/kboot v0.1.0-beta.1/go.mod h1:hSHZoo9UrKZ3hjP0LZGe4IFGC1abo90GJ5XOV4ADjdM=
-github.com/guestin/kboot v0.1.0-beta.5 h1:UGTazSeMuuJhD2o+/UgkfR4sJwy8X3HhakYqDPDzybs=
-github.com/guestin/kboot v0.1.0-beta.5/go.mod h1:hSHZoo9UrKZ3hjP0LZGe4IFGC1abo90GJ5XOV4ADjdM=
 github.com/guestin/kboot v0.1.0-beta.6 h1:OSiEN8ppDT5Zsx0r4kJE9DQAmGBgVmfMJzL1hEb0awo=
 github.com/guestin/kboot v0.1.0-beta.6/go.mod h1:YgLhBlh/IzZJ12nInl5qp86xLs0IKx/k2MjwSDF1r2o=
-github.com/guestin/log v1.0.1 h1:k0F+Cwx4zXDxxwGjQxAY9qtW+Wv4P0A8/T4qdzQcwfs=
-github.com/guestin/log v1.0.1/go.mod h1:wTf3/jPnIvOEuZ5n+FsoxYTThPe/FCu9Cwg5oPJ3BNw=
 github.com/guestin/log v1.0.3 h1:l4NUoUXYygQ1eBW1EMkdYvlsyLQ1I/VSfjCEN4X4iQw=
 github.com/guestin/log v1.0.3/go.mod h1:sNmSzy2D/QW8F8R0LwLxcXLuOy5QJP8N3YxY4LGqIqI=
 github.com/guestin/mob v1.1.1 h1:OyE8UBlxsOGnJXlLcetHoLHg5v7i5SitHSJ7Hg/dQLY=

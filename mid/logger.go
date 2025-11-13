@@ -78,8 +78,8 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 	if config.LogReqBody == nil {
 		config.LogReqBody = DefaultLoggerConfig.LogReqBody
 	}
-	if config.LogRespBodyOption == 0 {
-		config.LogRespBodyOption = DefaultLoggerConfig.LogRespBodyOption
+	if config.LogReqBodyOption == 0 {
+		config.LogReqBodyOption = DefaultLoggerConfig.LogReqBodyOption
 	}
 	if config.LogReqHeader == nil {
 		config.LogReqHeader = DefaultLoggerConfig.LogReqHeader
