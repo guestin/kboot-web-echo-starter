@@ -3,6 +3,7 @@ package mid
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -126,6 +127,12 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 				reqBody := make([]byte, 0)
 				reqBody, _ = io.ReadAll(ctx.Request().Body)
 				ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody)) // reset
+				if strings.Contains(reqCt, MIMEApplicationJSON) {
+					buf := new(bytes.Buffer)
+					if ce := json.Compact(buf, reqBody); ce == nil {
+						reqBody = buf.Bytes()
+					}
+				}
 				bodyLines := strings.Split(string(reqBody), "\n")
 				logger.Debug("Body:")
 				for _, line := range bodyLines {
