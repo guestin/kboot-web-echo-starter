@@ -87,10 +87,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 		defer func() {
 			pe := recover()
 			if pe != nil {
-				err = errors.Errorf("handler panic: %v", pe)
-				GetTraceLogger(ctx).Error(
-					"panic recovery",
-					zap.Error(err))
+				err = errors.Errorf("panic recovery: %v", pe)
 			}
 			errorHandle(err, ctx)
 			err = nil
