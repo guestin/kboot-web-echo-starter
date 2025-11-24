@@ -154,7 +154,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 		var respData interface{}
 		if rspDataIdx != -1 {
 			rspKind := outs[rspDataIdx].Kind()
-			if rspKind == reflect.Ptr || rspKind == reflect.Struct {
+			if rspKind == reflect.Ptr {
 				if !(outs[rspDataIdx]).IsNil() {
 					respData = outs[rspDataIdx].Interface()
 				}
