@@ -152,6 +152,7 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			}
 		}
 		var respData interface{}
+		// check rsp data
 		if rspDataIdx != -1 {
 			rspKind := outs[rspDataIdx].Kind()
 			if rspKind == reflect.Ptr {
@@ -162,12 +163,16 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 				respData = outs[rspDataIdx].Interface()
 			}
 		}
-
-		if cfg.SkipFormat {
-			return ctx.JSON(http.StatusOK, respData)
+		// if skip format, return raw data
+		if cfg.SkipFormat && !ctx.Response().Committed {
+			if respData != nil {
+				return ctx.JSON(http.StatusOK, respData)
+			} else {
+				return ctx.NoContent(http.StatusOK)
+			}
 		}
 		var resp interface{}
-		switch err.(type) {
+		switch respData.(type) {
 		case merrors.Error:
 			resp = respData
 		default:
