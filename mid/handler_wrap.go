@@ -287,8 +287,9 @@ func checkOutParam(name string, t reflect.Type) (reflect.Type, uint32) {
 	outNum := t.NumOut()
 	assert.Mustf(outNum > 0 && outNum <= 2,
 		"'%s' not valid :outNum len must be 1(error) or 2(any,error)", name).Panic()
+
 	lastOut := t.Out(outNum - 1)
-	assert.Mustf(lastOut == typeOfError,
+	assert.Mustf(lastOut.Implements(typeOfError),
 		"'%s' not valid :the last out param must be 'error'", name).Panic()
 	switch outNum {
 	case 1:
