@@ -3,7 +3,6 @@ package mid
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +12,10 @@ import (
 )
 
 type (
+	AuthProvider interface {
+		Auth(ctx echo.Context) (AuthSessionInfo, error)
+	}
+
 	AuthSessionInfo interface {
 		UserId() string
 		ExpireAt() int64
@@ -26,20 +29,15 @@ type (
 		ClientUA() string
 		SessionInfo() AuthSessionInfo
 	}
-	SessionLoadFunc func(ctx echo.Context, sessionId string) (AuthSessionInfo, error)
-	AuthConfig      struct {
-		Enabled              bool     `toml:"enabled" json:"enabled" mapstructure:"enabled"` //是否启用，启用后将解析session info
-		Whitelist            []string `toml:"whitelist" json:"whitelist" mapstructure:"whitelist"`
-		SessionIdKey         string   `toml:"sessionIdKey" json:"sessionIdKey" mapstructure:"sessionIdKey"`
-		SessionExpireInHours int      `toml:"sessionExpireInHours" json:"sessionExpireInHours" validate:"gte=0,lte=720" mapstructure:"sessionExpireInHours"`
-		SessionLoadFunc      SessionLoadFunc
+	AuthConfig struct {
+		Enabled   bool     `toml:"enabled" json:"enabled" mapstructure:"enabled"` //是否启用，启用后将解析session info
+		Whitelist []string `toml:"whitelist" json:"whitelist" mapstructure:"whitelist"`
 	}
 )
 
 var DefaultAuthConfig = AuthConfig{
-	Enabled:      false,
-	Whitelist:    []string{},
-	SessionIdKey: "kt-session-id",
+	Enabled:   false,
+	Whitelist: []string{},
 }
 
 type _authCtx struct {
@@ -108,14 +106,11 @@ func CurrentAuthContext(ctx echo.Context) AuthContext {
 	return ctx.Get(CtxCallerInfoKey).(AuthContext)
 }
 
-func Auth() echo.MiddlewareFunc {
-	return AuthWithConfig(DefaultAuthConfig)
+func Auth(providers ...AuthProvider) echo.MiddlewareFunc {
+	return AuthWithConfig(DefaultAuthConfig, providers...)
 }
 
-func AuthWithConfig(config AuthConfig) echo.MiddlewareFunc {
-	if strings.Trim(config.SessionIdKey, " ") == "" {
-		config.SessionIdKey = DefaultAuthConfig.SessionIdKey
-	}
+func AuthWithConfig(config AuthConfig, providers ...AuthProvider) echo.MiddlewareFunc {
 	excludePathSet := mob.NewConcurrentSet()
 	excludeRegList := make([]*regexp.Regexp, 0)
 	for i := range config.Whitelist {
@@ -152,26 +147,20 @@ func AuthWithConfig(config AuthConfig) echo.MiddlewareFunc {
 					}
 				}
 			}
-			sessionId := ctx.Request().Header.Get(config.SessionIdKey)
-			if len(sessionId) == 0 {
-				sessionId = ctx.QueryParam(config.SessionIdKey)
-			}
-			if len(sessionId) == 0 && !ignore {
-				return kerrors.ErrUnauthorized()
-			}
-			authCtx.sessionId = sessionId
-			if config.SessionLoadFunc != nil && len(sessionId) > 0 {
-				sessionInfo, err := config.SessionLoadFunc(ctx, sessionId)
+			// try auth with providers, if any provider auth success, will pass
+			for _, provider := range providers {
+				sessionInfo, err := provider.Auth(ctx)
 				if err == nil {
 					authCtx.isAnonymous = false
 					authCtx.userId = sessionInfo.UserId()
 					authCtx.expireAt = sessionInfo.ExpireAt()
 					authCtx.sessionInfo = sessionInfo
-				} else {
-					if !ignore {
-						return kerrors.ErrUnauthorized()
-					}
+					break
 				}
+			}
+			// no provider auth success, if in ignore list, will pass with anonymous auth info, otherwise return unauthorized error
+			if authCtx.isAnonymous && !ignore {
+				return kerrors.ErrUnauthorized()
 			}
 			return next(ctx)
 		}
