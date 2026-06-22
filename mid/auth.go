@@ -32,6 +32,7 @@ type (
 	AuthConfig struct {
 		Enabled   bool     `toml:"enabled" json:"enabled" mapstructure:"enabled"` //是否启用，启用后将解析session info
 		Whitelist []string `toml:"whitelist" json:"whitelist" mapstructure:"whitelist"`
+		Skipper   Skipper
 	}
 )
 
@@ -146,6 +147,9 @@ func AuthWithConfig(config AuthConfig, providers ...AuthProvider) echo.Middlewar
 						break
 					}
 				}
+			}
+			if config.Skipper != nil && config.Skipper(ctx) {
+				ignore = true
 			}
 			// try auth with providers, if any provider auth success, will pass
 			for _, provider := range providers {
