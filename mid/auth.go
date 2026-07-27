@@ -119,7 +119,7 @@ func AuthWithConfig(config AuthConfig, providers ...AuthProvider) echo.Middlewar
 		if excludePathSet.Add(p) {
 			reg, err := regexp.Compile(p)
 			if err != nil {
-				panic(fmt.Sprintf("witelist path %s is not a valid reg path", p))
+				panic(fmt.Sprintf("whitelist path %s is not a valid reg path", p))
 			}
 			excludeRegList = append(excludeRegList, reg)
 		}
