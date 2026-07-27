@@ -199,7 +199,7 @@ func errorHandle(err error, ctx echo.Context) {
 		errors.As(err, &rsp)
 	case validator.ValidationErrors, mvalidate.ValidateError:
 		errCategory = 2
-		rsp = kerrors.ErrBadRequestf("Bad Request :%v", err)
+		rsp = kerrors.ErrBadRequest(err.Error())
 	case *echo.HTTPError:
 		errCategory = 3
 		var he *echo.HTTPError

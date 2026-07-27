@@ -5,9 +5,9 @@ go 1.25.0
 require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/go-playground/validator/v10 v10.30.3
-	github.com/guestin/kboot v0.1.0-beta.10
+	github.com/guestin/kboot v0.1.0-beta.11
 	github.com/guestin/log v1.0.3
-	github.com/guestin/mob v1.1.3
+	github.com/guestin/mob v1.1.5
 	github.com/labstack/echo/v4 v4.15.4
 	github.com/mattn/go-isatty v0.0.24
 	github.com/ooopSnake/assert.go v1.0.1
