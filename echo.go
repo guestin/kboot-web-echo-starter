@@ -34,6 +34,7 @@ func (this *web) Init() error {
 	eCtx.DisableHTTP2 = true
 	eCtx.HTTPErrorHandler = this.globalErrorHandle
 	eCtx.Validator = kboot.MValidator()
+	eCtx.Binder = &_binder{under: &echo.DefaultBinder{}}
 	// custom context
 	eCtx.Use(mid.WithContext(this.ctx))
 	// request id

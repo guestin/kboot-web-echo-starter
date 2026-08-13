@@ -1,8 +1,6 @@
 package mid
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -21,9 +19,8 @@ import (
 type (
 	// wrapCtx defines the config for Format middleware.
 	wrapCtx struct {
-		AllowDuplicateBind bool
-		SkipFormat         bool
-		SetReq2Ctx         bool
+		SkipFormat bool
+		SetReq2Ctx bool
 	}
 	WrapOption interface {
 		apply(cfg *wrapCtx)
@@ -33,12 +30,6 @@ type (
 
 func (f wrapOptionFunc) apply(cfg *wrapCtx) {
 	f(cfg)
-}
-
-func WrapAllowDuplicateBind() WrapOption {
-	return wrapOptionFunc(func(cfg *wrapCtx) {
-		cfg.AllowDuplicateBind = true
-	})
 }
 
 func SkipFormat() WrapOption {
@@ -104,20 +95,8 @@ func Wrap(handler interface{}, option ...WrapOption) echo.HandlerFunc {
 			} else {
 				req = reflect.New(inType).Interface()
 			}
-			if cfg.AllowDuplicateBind {
-				reqBody := make([]byte, 0)
-				if ctx.Request().Body != nil {
-					reqBody, _ = io.ReadAll(ctx.Request().Body)
-				}
-				ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody))
-				// bind
-				err = ctx.Bind(req)
-				// reset the body for next bind
-				ctx.Request().Body = io.NopCloser(bytes.NewBuffer(reqBody))
-			} else {
-				// bind
-				err = ctx.Bind(req)
-			}
+			// bind
+			err = ctx.Bind(req)
 			if err != nil {
 				return err
 			}
